@@ -9,12 +9,13 @@ import ConditionIcon from "./ConditionIcon";
 
 interface handleFetchArgs {
   api_url: string;
-  text: string;
+  text: string | undefined;
 }
 
 const handleFetch = async ({ api_url, text }: handleFetchArgs) => {
   try {
     if (!text) throw new Error("No text provided for fetch");
+    console.log("handleFetch response:", api_url, text);
 
     const res = await fetch(api_url, {
       method: "POST",
@@ -23,7 +24,6 @@ const handleFetch = async ({ api_url, text }: handleFetchArgs) => {
     });
 
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    console.log("handleFetch response:", text, res);
     return await res.json();
   } catch (error) {
     console.error("Error in fetch:", error);
@@ -67,11 +67,10 @@ export default function ClinicalTrialViewer({
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [summary, setSummary] = useState<string | null>(null);
+  const conditionImageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     fetchTrialData();
-    console.log(data);
-    fetchSummary();
   }, [trialId]);
 
   const fetchTrialData = async () => {
@@ -824,23 +823,40 @@ export default function ClinicalTrialViewer({
   useEffect(() => {
     if (!data || !data.condition)
       return console.log("No condition to summarize");
-    fetchSummary();
+    // fetchSummary();
   }, [data?.condition]);
 
   const fetchSummary = async () => {
     if (!data?.condition) return;
-    console.log("Fetching summary:", data?.condition);
 
     const res = await handleFetch({
       api_url: "api/summarize",
       text: data?.condition,
     });
 
-    console.error(" API res", res);
     if (!res || !res.summary) return;
-
     setSummary(res.summary);
-    console.log("Summary fetched:", res.summary);
+  };
+
+  useEffect(() => {
+    fetchImage();
+  }, [data?.condition]);
+
+  const fetchImage = async () => {
+    if (!conditionImageRef || !data)
+      return console.log("no condition image element");
+
+    const result = await handleFetch({
+      api_url: "/api/image-gen",
+      text: data?.condition,
+    });
+
+    console.log("fetchimage: ", result);
+    if (result.imageUrl && conditionImageRef.current) {
+      console.log("Setting condition image src:");
+      conditionImageRef.current.src = result.imageUrl;
+      return;
+    }
   };
 
   const handleDownload = async () => {
@@ -988,7 +1004,12 @@ export default function ClinicalTrialViewer({
           {/* Title Section */}
           <div className="text-background mb-6 pb-6 border-b-2 border-slate-200">
             <div className="flex justify-center items-left gap-6 mr-4">
-              <div className="w-30 aspect-square border-4 border-destructive rounded-full flex flex-col-2 items-center justify-center bg-muted overflow-hidden">
+              <div className="w-50 aspect-square border-4 border-destructive rounded-full flex flex-col-2 items-center justify-center bg-muted overflow-hidden">
+                <img
+                  ref={conditionImageRef}
+                  src="/medical-heart.jpg"
+                  alt={data.title}
+                />
                 {ConditionIcon(data.condition)}
               </div>
               <h1 className="text-2xl font-bold  text-center leading-relaxed">

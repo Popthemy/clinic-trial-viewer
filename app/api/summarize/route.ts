@@ -1,23 +1,23 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { NextResponse } from "next/server";
+// import { GoogleGenerativeAI } from "@google/generative-ai";
+// import { NextResponse } from "next/server";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-export async function POST(req: Request) {
-  const { text } = await req.json();
-  console.error("Received text for summarization:", text);
+// export async function POST(req: Request) {
+//   const { text } = await req.json();
 
-  if (!text) {
-    return NextResponse.json({ error: "No text provided" }, { status: 400 });
-  }
+//   if (!text) {
+//     return NextResponse.json({ error: "No text provided" }, { status: 400 });
+//   }
 
-  const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash" });
-  const result = await model.generateContent(`Summarize this: ${text}`);
-  const summary = result.response.text();
+//   const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash" });
+//   const prompt =
+//     "Rephrase the following treatment description in a clinical tone suitable for inclusion in a patient treatment summary. Return only the rephrased sentence without any introductory text, labels, or formatting:";
+//   const result = await model.generateContent(`${prompt}: ${text}`);
+//   const summary = result.response.text();
 
-  return NextResponse.json({ summary });
-  // return NextResponse.json({ sum: "i am loogin at you can you see e" });
-}
+//   return NextResponse.json({ summary });
+// }
 
 // export async function GET() {
 //   const res = await fetch(
@@ -30,177 +30,39 @@ export async function POST(req: Request) {
 //   });
 // }
 
-/**
- * {
-  "models": [
-    {
-      "name": "models/gemini-2.5-flash",
-      "version": "001",
-      "displayName": "Gemini 2.5 Flash",
-      "description": "Stable version of Gemini 2.5 Flash, our mid-size multimodal model that supports up to 1 million tokens, released in June of 2025.",
-      "inputTokenLimit": 1048576,
-      "outputTokenLimit": 65536,
-      "supportedGenerationMethods": [
-        "generateContent",
-        "countTokens",
-        "createCachedContent",
-        "batchGenerateContent"
-      ],
-      "temperature": 1,
-      "topP": 0.95,
-      "topK": 64,
-      "maxTemperature": 2,
-      "thinking": true
-    },
-    {
-      "name": "models/gemini-2.5-pro",
-      "version": "2.5",
-      "displayName": "Gemini 2.5 Pro",
-      "description": "Stable release (June 17th, 2025) of Gemini 2.5 Pro",
-      "inputTokenLimit": 1048576,
-      "outputTokenLimit": 65536,
-      "supportedGenerationMethods": [
-        "generateContent",
-        "countTokens",
-        "createCachedContent",
-        "batchGenerateContent"
-      ],
-      "temperature": 1,
-      "topP": 0.95,
-      "topK": 64,
-      "maxTemperature": 2,
-      "thinking": true
-    },
-    {
-      "name": "models/gemini-2.0-flash",
-      "version": "2.0",
-      "displayName": "Gemini 2.0 Flash",
-      "description": "Gemini 2.0 Flash",
-      "inputTokenLimit": 1048576,
-      "outputTokenLimit": 8192,
-      "supportedGenerationMethods": [
-        "generateContent",
-        "countTokens",
-        "createCachedContent",
-        "batchGenerateContent"
-      ],
-      "temperature": 1,
-      "topP": 0.95,
-      "topK": 40,
-      "maxTemperature": 2
-    },
-    {
-      "name": "models/gemini-2.0-flash-001",
-      "version": "2.0",
-      "displayName": "Gemini 2.0 Flash 001",
-      "description": "Stable version of Gemini 2.0 Flash, our fast and versatile multimodal model for scaling across diverse tasks, released in January of 2025.",
-      "inputTokenLimit": 1048576,
-      "outputTokenLimit": 8192,
-      "supportedGenerationMethods": [
-        "generateContent",
-        "countTokens",
-        "createCachedContent",
-        "batchGenerateContent"
-      ],
-      "temperature": 1,
-      "topP": 0.95,
-      "topK": 40,
-      "maxTemperature": 2
-    },
-    {
-      "name": "models/gemini-2.0-flash-lite-001",
-      "version": "2.0",
-      "displayName": "Gemini 2.0 Flash-Lite 001",
-      "description": "Stable version of Gemini 2.0 Flash-Lite",
-      "inputTokenLimit": 1048576,
-      "outputTokenLimit": 8192,
-      "supportedGenerationMethods": [
-        "generateContent",
-        "countTokens",
-        "createCachedContent",
-        "batchGenerateContent"
-      ],
-      "temperature": 1,
-      "topP": 0.95,
-      "topK": 40,
-      "maxTemperature": 2
-    },
-    {
-      "name": "models/gemini-2.0-flash-lite",
-      "version": "2.0",
-      "displayName": "Gemini 2.0 Flash-Lite",
-      "description": "Gemini 2.0 Flash-Lite",
-      "inputTokenLimit": 1048576,
-      "outputTokenLimit": 8192,
-      "supportedGenerationMethods": [
-        "generateContent",
-        "countTokens",
-        "createCachedContent",
-        "batchGenerateContent"
-      ],
-      "temperature": 1,
-      "topP": 0.95,
-      "topK": 40,
-      "maxTemperature": 2
-    },
-    {
-      "name": "models/gemini-2.0-flash-preview-image-generation",
-      "version": "2.0",
-      "displayName": "Gemini 2.0 Flash Preview Image Generation",
-      "description": "Gemini 2.0 Flash Preview Image Generation",
-      "inputTokenLimit": 32768,
-      "outputTokenLimit": 8192,
-      "supportedGenerationMethods": [
-        "generateContent",
-        "countTokens",
-        "batchGenerateContent"
-      ],
-      "temperature": 1,
-      "topP": 0.95,
-      "topK": 64,
-      "maxTemperature": 2
-    },
-    {
-      "name": "models/gemini-2.5-flash-lite",
-      "version": "001",
-      "displayName": "Gemini 2.5 Flash-Lite",
-      "description": "Stable version of Gemini 2.5 Flash-Lite, released in July of 2025",
-      "inputTokenLimit": 1048576,
-      "outputTokenLimit": 65536,
-      "supportedGenerationMethods": [
-        "generateContent",
-        "countTokens",
-        "createCachedContent",
-        "batchGenerateContent"
-      ],
-      "temperature": 1,
-      "topP": 0.95,
-      "topK": 64,
-      "maxTemperature": 2,
-      "thinking": true
-    },
-    {
-      "name": "models/embedding-001",
-      "version": "001",
-      "displayName": "Embedding 001",
-      "description": "Obtain a distributed representation of a text.",
-      "inputTokenLimit": 2048,
-      "outputTokenLimit": 1,
-      "supportedGenerationMethods": [
-        "embedContent"
-      ]
-    },
-    {
-      "name": "models/text-embedding-004",
-      "version": "004",
-      "displayName": "Text Embedding 004",
-      "description": "Obtain a distributed representation of a text.",
-      "inputTokenLimit": 2048,
-      "outputTokenLimit": 1,
-      "supportedGenerationMethods": [
-        "embedContent"
-      ]
+import OpenAI from "openai";
+import { NextResponse } from "next/server";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+export async function POST(req: Request) {
+  try {
+    const { text } = await req.json();
+
+    if (!text) {
+      return NextResponse.json({ error: "Missing text" }, { status: 400 });
     }
-  ]
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4", // or gpt-4o or gpt-4o-mini or gpt-3.5-turbo depending on availability
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a helpful assistant that summarizes clinical trial text.",
+        },
+        { role: "user", content: `Summarize the following text:\n\n${text}` },
+      ],
+      temperature: 0.3,
+      max_tokens: 200, // adjust as needed
+    });
+
+    const summary = response.choices?.[0]?.message?.content;
+    return NextResponse.json({ summary });
+  } catch (err: any) {
+    console.error("Summarize error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
- */
