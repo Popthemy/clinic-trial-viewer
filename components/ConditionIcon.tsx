@@ -28,7 +28,7 @@ const ICON_RULES = [
 interface ConditionIconProps {
   condition: string;
   size: number;
-  className: string;
+  className?: string;
 }
 
 export default function ConditionIcon({

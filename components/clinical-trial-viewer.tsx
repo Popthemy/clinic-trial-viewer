@@ -5,7 +5,8 @@ import React, { useEffect, useState, useRef, use } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
-import ConditionIcon from "./ConditionIcon";
+import MedicalIconComponent from "./MedicalIcon";
+import defaultMedicalIcon from "../public/default-medical-icon.jpg";
 
 interface handleFetchArgs {
   api_url: string;
@@ -67,7 +68,7 @@ export default function ClinicalTrialViewer({
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [summary, setSummary] = useState<string | null>(null);
-  const conditionImageRef = useRef<HTMLImageElement>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTrialData();
@@ -843,8 +844,7 @@ export default function ClinicalTrialViewer({
   }, [data?.condition]);
 
   const fetchImage = async () => {
-    if (!conditionImageRef || !data)
-      return console.log("no condition image element");
+    if (!data || !imageUrl) return console.log("no data or image url");
 
     const result = await handleFetch({
       api_url: "/api/image-gen",
@@ -852,9 +852,9 @@ export default function ClinicalTrialViewer({
     });
 
     console.log("fetchimage: ", result);
-    if (result.imageUrl && conditionImageRef.current) {
+    if (result.imageUrl) {
       console.log("Setting condition image src:");
-      conditionImageRef.current.src = result.imageUrl;
+      setImageUrl(result.imageUrl);
       return;
     }
   };
@@ -1003,14 +1003,14 @@ export default function ClinicalTrialViewer({
         >
           {/* Title Section */}
           <div className="text-background mb-6 pb-6 border-b-2 border-slate-200">
-            <div className="flex justify-center items-left gap-6 mr-4">
-              <div className="w-50 aspect-square border-4 border-destructive rounded-full flex flex-col-2 items-center justify-center bg-muted overflow-hidden">
-                <img
-                  ref={conditionImageRef}
-                  src="/medical-heart.jpg"
+            <div className="flex justify-center items-left gap-6 mr-4 relative overflow-hidden ">
+              <div className="w-sm aspect-square border-2 border-destructive rounded-full relative bg-muted overflow-hidden flex justify-center items-center">
+                <MedicalIconComponent
+                  condition={data.condition}
+                  src={imageUrl}
                   alt={data.title}
+                  size={40}
                 />
-                {ConditionIcon(data.condition)}
               </div>
               <h1 className="text-2xl font-bold  text-center leading-relaxed">
                 Patients With {data.condition}
