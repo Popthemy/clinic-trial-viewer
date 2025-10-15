@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useRef, use } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 import { QRCodeSVG } from "qrcode.react";
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
-import MedicalIconComponent from "./MedicalIcon";
+import MedicalIcon from "./MedicalIcon";
+import ExternalAlink from "./ExternalAlink";
 import defaultMedicalIcon from "../public/default-medical-icon.jpg";
+import { ta } from "date-fns/locale";
 
 interface handleFetchArgs {
   api_url: string;
@@ -863,42 +865,49 @@ export default function ClinicalTrialViewer({
     if (!contentRef.current) return;
 
     try {
-      // console.log(contentRef);
+      // STEP 1: Capture the content with high scale
       const canvas = await html2canvas(contentRef.current, {
-        scale: 1,
+        scale: 3, // higher = better quality, slower
         backgroundColor: "#ffffff",
         logging: false,
         scrollY: -window.scrollY,
       });
 
-      // Convert canvas to image
-      const imageData = canvas.toDataURL("image/png");
+      // STEP 2: Resize canvas to A4 ratio (1240 x 1754)
+      const targetWidth = 1240;
+      const targetHeight = 1754;
 
-      // Create A5 PDF
-      const pdf = new jsPDF("p", "mm", "a5");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const outputCanvas = document.createElement("canvas");
+      outputCanvas.width = targetWidth;
+      outputCanvas.height = targetHeight;
 
-      // Calculate scaled image dimensions
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const ctx = outputCanvas.getContext("2d");
+      if (!ctx) throw new Error("2D context not found");
 
-      // If image taller than A5, scale down to fit height
-      let finalWidth = imgWidth;
-      let finalHeight = imgHeight;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, targetWidth, targetHeight);
 
-      if (imgHeight > pdfHeight) {
-        const scaleFactor = pdfHeight / imgHeight;
-        finalWidth = imgWidth * scaleFactor;
-        finalHeight = imgHeight * scaleFactor;
-      }
+      const scale = Math.min(
+        targetWidth / canvas.width,
+        targetHeight / canvas.height
+      );
+      const scaledWidth = canvas.width * scale;
+      const scaledHeight = canvas.height * scale;
+      const offsetX = (targetWidth - scaledWidth) / 2;
+      const offsetY = (targetHeight - scaledHeight) / 2;
 
-      // Center image if smaller than page
-      const xOffset = (pdfWidth - finalWidth) / 2;
-      const yOffset = (pdfHeight - finalHeight) / 2;
+      ctx.drawImage(canvas, offsetX, offsetY, scaledWidth, scaledHeight);
 
-      // Add scaled image to PDF
-      pdf.addImage(imageData, "PNG", xOffset, yOffset, finalWidth, finalHeight);
+      const imageData = outputCanvas.toDataURL("image/png");
+
+      // Optional: create PDF using pixel dimensions
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "px",
+        format: [targetWidth, targetHeight],
+      });
+
+      pdf.addImage(imageData, "PNG", 0, 0, targetWidth, targetHeight);
       pdf.save(`clinical-trial-${trialId}.pdf`);
     } catch (err) {
       console.error("Failed to download:", err);
@@ -1005,7 +1014,7 @@ export default function ClinicalTrialViewer({
           <div className="text-background mb-6 pb-6 border-b-2 border-slate-200">
             <div className="flex justify-center items-left gap-6 mr-4 relative overflow-hidden ">
               <div className="w-sm aspect-square border-2 border-destructive rounded-full relative bg-muted overflow-hidden flex justify-center items-center">
-                <MedicalIconComponent
+                <MedicalIcon
                   condition={data.condition}
                   src={imageUrl}
                   alt={data.title}
@@ -1055,28 +1064,9 @@ export default function ClinicalTrialViewer({
             </div>
           )}
 
-          {/* QR Code Section */}
-          {/* <div className="text-background mb-6 p-6 bg-gradient-to-br from-blue-50 to-slate-50 rounded-lg border border-slate-200">
-            <div className="flex flex-col items-center text-center">
-              <p className=" font-medium mb-3">For additional info: scan</p>
-              <div className="bg-white p-4 rounded-lg shadow-md mb-3">
-                <QRCodeSVG value={data.studyUrl} size={60} level="H" />
-              </div>
-              <p className="text-sm mb-2">Speak to a rep to find more info</p>
-              <a
-                href={data.studyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm hover:text-blue-700 underline break-all"
-              >
-                {data.studyUrl}
-              </a>
-            </div>
-          </div> */}
-
           {/* Primary Outcome */}
           <div className="relative mb-6 p-4 bg-background  text-white rounded-lg border border-slate-200">
-            <div className="absolute right-5 top-[-30px]  bg-white p-4 rounded-lg shadow-md mb-3">
+            <div className="absolute -top-15 right-2 z-10 bg-white p-2 rounded shadow-md">
               <QRCodeSVG value={data.studyUrl} size={90} level="H" />
             </div>
             <h3 className="font-semibold mb-2">Primary Outcome Measure</h3>
@@ -1097,73 +1087,40 @@ export default function ClinicalTrialViewer({
               </ul>
             </div>
           </div>
+        </div>
 
-          {/* Study Information Section */}
-          <div
-            id="study-info"
-            className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200"
-          >
-            <h3 className="font-semibold text-destructive mb-3 text-center">
-              Study Information from clinicaltrials.gov
-            </h3>
-            <div className="flex flex-wrap justify-center gap-3">
-              <ExternalAlink
-                link={`${data.studyUrl}/#study-overview`}
-                className="px-6 py-2 bg-white border-2 border-destructive text-destructive font-medium rounded-lg hover:border-background hover:bg-background hover:text-white transition-colors"
-              >
-                Study Plan
-              </ExternalAlink>
+        {/* Study Information Section */}
+        <div
+          id="study-info"
+          className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200"
+        >
+          <h3 className="font-semibold text-destructive mb-3 text-center">
+            Study Information from clinicaltrials.gov
+          </h3>
+          <div className="flex flex-wrap justify-center gap-3">
+            <ExternalAlink
+              link={`${data.studyUrl}/#study-overview`}
+              className="px-6 py-2 bg-white border-2 border-destructive text-destructive font-medium rounded-lg hover:border-background hover:bg-background hover:text-white transition-colors"
+            >
+              Study Plan
+            </ExternalAlink>
 
-              <ExternalAlink
-                link={`${data.studyUrl}/#participation-criteria`}
-                className="px-6 py-2 bg-white border-2 border-destructive text-destructive font-medium rounded-lg hover:border-background hover:bg-background hover:text-white transition-colors"
-              >
-                Participation Criteria
-              </ExternalAlink>
+            <ExternalAlink
+              link={`${data.studyUrl}/#participation-criteria`}
+              className="px-6 py-2 bg-white border-2 border-destructive text-destructive font-medium rounded-lg hover:border-background hover:bg-background hover:text-white transition-colors"
+            >
+              Participation Criteria
+            </ExternalAlink>
 
-              <ExternalAlink
-                link={`${data.studyUrl}/#contact-and-locations`}
-                className="px-6 py-2 bg-white border-2 border-destructive text-destructive font-medium rounded-lg hover:border-background hover:bg-background hover:text-white transition-colors"
-              >
-                Contacts and Locations
-              </ExternalAlink>
-            </div>
+            <ExternalAlink
+              link={`${data.studyUrl}/#contact-and-locations`}
+              className="px-6 py-2 bg-white border-2 border-destructive text-destructive font-medium rounded-lg hover:border-background hover:bg-background hover:text-white transition-colors"
+            >
+              Contacts and Locations
+            </ExternalAlink>
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-interface ExternalAlinkProps {
-  link: string;
-  className: string;
-  children?: React.ReactNode;
-}
-
-function ExternalAlink({ link, className, children }: ExternalAlinkProps) {
-  return (
-    <a
-      href={link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={className}
-      // className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mt-4"
-    >
-      {children}
-      <svg
-        className="w-4 h-4"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-        />
-      </svg>
-    </a>
   );
 }
