@@ -26,11 +26,11 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background text-foreground bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200 text-">
+        <div className="rounded-2xl shadow-xl p-8 border border-slate-200 text-background">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center text-white justify-center w-16 h-16 bg-background rounded-full mb-4">
+            <div className="inline-flex items-center text-foreground bg-card justify-center w-16 h-16 rounded-full mb-4">
               <svg
                 className="w-8 h-8 "
                 fill="none"
@@ -45,9 +45,7 @@ export default function Home() {
                 />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold mb-2 text-background">
-              Clinical Trial Viewer
-            </h1>
+            <h1 className="text-3xl font-bold mb-2">Clinical Trial Viewer</h1>
             <p>Enter a trial ID to view detailed information</p>
           </div>
 
@@ -55,7 +53,7 @@ export default function Home() {
             <div>
               <label
                 htmlFor="trialId"
-                className="block text-sm font-medium text-background mb-2"
+                className="block text-sm font-medium mb-2"
               >
                 Trial ID (NCT Number)
               </label>
@@ -65,21 +63,21 @@ export default function Home() {
                 value={trialId}
                 onChange={(e) => setTrialId(e.target.value)}
                 placeholder="e.g., NCT06077760"
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-background focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 border border-white rounded-lg focus:ring-2 focus:ring-background focus:border-transparent outline-none transition-all"
                 required
               />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-background hover:bg-red text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-lg shadow-blue-500/30"
+              className="w-full text-foreground bg-background hover:bg-red font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-lg shadow-blue-500/30"
             >
               View Trial Information
             </button>
           </form>
         </div>
 
-        <p className="text-center text-color-crimson text-sm mt-6">
+        <p className="text-center text-card text-sm mt-6">
           Data sourced from ClinicalTrials.gov
         </p>
       </div>

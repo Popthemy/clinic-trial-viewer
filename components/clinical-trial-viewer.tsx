@@ -3,12 +3,23 @@
 import React, { useEffect, useState, useRef } from "react";
 
 import { QRCodeSVG } from "qrcode.react";
-import html2canvas from "html2canvas-pro";
+
 import { jsPDF } from "jspdf";
 import MedicalIcon from "./MedicalIcon";
-import ExternalAlink from "./ExternalAlink";
+import StudyInformation from "./StudyInformation";
 import defaultMedicalIcon from "../public/default-medical-icon.jpg";
-import { ta } from "date-fns/locale";
+import { pdfExporter } from "@/public/services/utils";
+/**
+ * NCT04615182 
+
+NCT04117295 
+
+NCT06174103 
+NCT05666453 
+
+NCT03853551
+NCT05136820
+ */
 
 interface handleFetchArgs {
   api_url: string;
@@ -30,7 +41,7 @@ const handleFetch = async ({ api_url, text }: handleFetchArgs) => {
     return await res.json();
   } catch (error) {
     console.error("Error in fetch:", error);
-    throw error; // Return null if an error occurs.
+    throw error;
   }
 };
 
@@ -69,7 +80,6 @@ export default function ClinicalTrialViewer({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [summary, setSummary] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -82,15 +92,17 @@ export default function ClinicalTrialViewer({
       setError(null);
 
       // Fetch from ClinicalTrials.gov API
-      // const response = await fetch(
-      //   `https://clinicaltrials.gov/api/v2/studies/${trialId}`
-      // );
+      /*const response = await fetch(
+        `https://clinicaltrials.gov/api/v2/studies/${trialId}`
+      );
+      console.log("Fetching trial data from:", response);
+      if (!response.ok) {
+        throw new Error("Trial not found");
+      }
 
-      // if (!response.ok) {
-      //   throw new Error("Trial not found");
-      // }
+      const result = await response.json();
+ */
 
-      // const result = await response.json();
       const result = {
         protocolSection: {
           identificationModule: {
@@ -770,9 +782,9 @@ export default function ClinicalTrialViewer({
         },
         hasResults: false,
       };
+
       const study = result.protocolSection;
 
-      // Extract required information
       const extractedData: ClinicalTrialData = {
         title:
           study.identificationModule?.officialTitle ||
@@ -838,15 +850,14 @@ export default function ClinicalTrialViewer({
     });
 
     if (!res || !res.summary) return;
-    setSummary(res.summary);
   };
 
   useEffect(() => {
-    fetchImage();
+    // fetchImage();
   }, [data?.condition]);
 
   const fetchImage = async () => {
-    if (!data || !imageUrl) return console.log("no data or image url");
+    if (!data) return console.log("no data or image url");
 
     const result = await handleFetch({
       api_url: "/api/image-gen",
@@ -862,53 +873,9 @@ export default function ClinicalTrialViewer({
   };
 
   const handleDownload = async () => {
-    if (!contentRef.current) return;
-
+    if (!contentRef.current || !trialId) return;
     try {
-      // STEP 1: Capture the content with high scale
-      const canvas = await html2canvas(contentRef.current, {
-        scale: 3, // higher = better quality, slower
-        backgroundColor: "#ffffff",
-        logging: false,
-        scrollY: -window.scrollY,
-      });
-
-      // STEP 2: Resize canvas to A4 ratio (1240 x 1754)
-      const targetWidth = 1240;
-      const targetHeight = 1754;
-
-      const outputCanvas = document.createElement("canvas");
-      outputCanvas.width = targetWidth;
-      outputCanvas.height = targetHeight;
-
-      const ctx = outputCanvas.getContext("2d");
-      if (!ctx) throw new Error("2D context not found");
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, targetWidth, targetHeight);
-
-      const scale = Math.min(
-        targetWidth / canvas.width,
-        targetHeight / canvas.height
-      );
-      const scaledWidth = canvas.width * scale;
-      const scaledHeight = canvas.height * scale;
-      const offsetX = (targetWidth - scaledWidth) / 2;
-      const offsetY = (targetHeight - scaledHeight) / 2;
-
-      ctx.drawImage(canvas, offsetX, offsetY, scaledWidth, scaledHeight);
-
-      const imageData = outputCanvas.toDataURL("image/png");
-
-      // Optional: create PDF using pixel dimensions
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "px",
-        format: [targetWidth, targetHeight],
-      });
-
-      pdf.addImage(imageData, "PNG", 0, 0, targetWidth, targetHeight);
-      pdf.save(`clinical-trial-${trialId}.pdf`);
+      pdfExporter(contentRef.current, trialId);
     } catch (err) {
       console.error("Failed to download:", err);
     }
@@ -916,10 +883,10 @@ export default function ClinicalTrialViewer({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-background to-foreground flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mb-4"></div>
-          <p className="text-slate-600">Loading trial information...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent mb-4"></div>
+          <p className="text-foreground">Loading trial information...</p>
         </div>
       </div>
     );
@@ -927,11 +894,11 @@ export default function ClinicalTrialViewer({
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+      <div className="min-h-screen bg-gradient-to-br flex items-center justify-center p-4">
+        <div className="bg-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-destructive/10 rounded-full mb-4">
             <svg
-              className="w-8 h-8 text-red-600"
+              className="w-8 h-8 text-destructive"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -944,13 +911,13 @@ export default function ClinicalTrialViewer({
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Error</h2>
-          <p className="text-slate-600 mb-6">
+          <h2 className="text-2xl font-bold text-foreground mb-2">Error</h2>
+          <p className="text-foreground mb-6">
             {error || "Failed to load trial data"}
           </p>
           <button
             onClick={onBack}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2 px-6 rounded-lg transition-colors"
           >
             Go Back
           </button>
@@ -960,13 +927,13 @@ export default function ClinicalTrialViewer({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8 px-4">
+    <div className="min-h-screen py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header Actions */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 text-primary">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-background hover:text-slate-900 transition-colors"
+            className="flex items-center gap-2 hover:text-primary/60 transition-colors cursor-pointer"
           >
             <svg
               className="w-5 h-5"
@@ -986,7 +953,7 @@ export default function ClinicalTrialViewer({
 
           <button
             onClick={handleDownload}
-            className="flex items-center gap-2 bg-background  text-white font-medium py-2 px-4 rounded-lg hover:bg-destructive transition-colors shadow-lg shadow-red-500/30"
+            className="flex items-center gap-2 font-medium py-2 px-4 rounded-lg border-border border-2 hover:bg-primary hover:text-foreground transition-colors shadow-lg shadow-primary/2 cursor-pointer"
           >
             <svg
               className="w-5 h-5"
@@ -1008,54 +975,47 @@ export default function ClinicalTrialViewer({
         {/* Main Content - Downloadable Section */}
         <div
           ref={contentRef}
-          className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200"
+          className="rounded-2xl shadow-xl p-8 border border-slate-200"
         >
           {/* Title Section */}
-          <div className="text-background mb-6 pb-6 border-b-2 border-slate-200">
-            <div className="flex justify-center items-left gap-6 mr-4 relative overflow-hidden ">
-              <div className="w-sm aspect-square border-2 border-destructive rounded-full relative bg-muted overflow-hidden flex justify-center items-center">
+          <div className="card-title border-b-2 border-slate-200">
+            <div className="flex justify-start items-left gap-6 mr-4">
+              <div className="w-32 shrink-0 aspect-square relative border-2 border-border rounded-full bg-white overflow-hidden flex justify-center items-center">
                 <MedicalIcon
                   condition={data.condition}
                   src={imageUrl}
                   alt={data.title}
-                  size={40}
+                  size={20}
                 />
               </div>
-              <h1 className="text-2xl font-bold  text-center leading-relaxed">
+              <h1 className="text-2xl flex-1 text-center font-bold  text-center leading-relaxed">
                 Patients With {data.condition}
-                <br />
-                Summary: {summary}
               </h1>
             </div>
             <div>
-              <p className="text-center mt-2 text-lg">{data.title}</p>
+              <p className="text-center mt-2 text-lg">
+                {data.title} <br /> ({trialId}){" "}
+              </p>
             </div>
           </div>
 
           {/* Allocation Info */}
-          <div className="mb-6 p-4 bg-background rounded-lg border border-slate-200">
-            <p className="text-center text-color-white">
-              <span className="font-semibold">Allocation:</span>{" "}
-              {data.allocation} •
-              <span className="font-semibold"> Intervention Model:</span>{" "}
-              {data.interventionModel} •
-              <span className="font-semibold"> Assignment:</span>{" "}
-              {data.assignment}
+          <div className="txt-blue mb-6 p-4 rounded-lg ">
+            <p className="text-center">
+              <span className="font-semibold">
+                {data.allocation + " " + data.interventionModel + " ASSIGNMENT"}
+              </span>
             </p>
           </div>
 
           {/* Arm Groups */}
           {data.armGroups.length > 0 && (
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <div className="flex flex-cols-2 gap-4 mb-6">
               {data.armGroups.map((group, index) => (
                 <div
                   key={index}
-                  className="p-4 bg-background text-color-white rounded-lg border border-blue-200"
+                  className="card-arms-group text-foreground p-4 rounded-lg border border-blue-200"
                 >
-                  <h3 className="font-semibold mb-2">
-                    Label Group {index + 1}
-                  </h3>
-                  <p className="text-sm leading-relaxed">{group.label}</p>
                   <p className="text-sm mt-2 leading-relaxed">
                     {group.description}
                   </p>
@@ -1064,60 +1024,45 @@ export default function ClinicalTrialViewer({
             </div>
           )}
 
-          {/* Primary Outcome */}
-          <div className="relative mb-6 p-4 bg-background  text-white rounded-lg border border-slate-200">
-            <div className="absolute -top-15 right-2 z-10 bg-white p-2 rounded shadow-md">
-              <QRCodeSVG value={data.studyUrl} size={90} level="H" />
+          <div className="flex gap-4">
+            <div className="w-[70%]">
+              {/* Primary Outcome */}
+              <div className="mb-6 p-4 rounded-lg border border-2 border-border text-card">
+                <h3 className="font-semibold mb-2">Primary Outcome Measure</h3>
+                <div className="mb-4">
+                  <ul>
+                    {data.primaryOutcome.map((outcome, index) => (
+                      <li
+                        className="list-disc list-inside mt-2 leading-relaxed"
+                        key={index}
+                      >
+                        {outcome.measure + ` ${outcome.timeframe}`}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              {/* Study Information Section */}
+              <StudyInformation
+                studyUrl={data.studyUrl}
+                className="mb-6 p-4 mt-2 rounded-lg border border-slate-200"
+              >
+                Study Information from clinicaltrials.gov
+              </StudyInformation>
             </div>
-            <h3 className="font-semibold mb-2">Primary Outcome Measure</h3>
-            <div className="mb-4 text-white">
-              <ul>
-                {data.primaryOutcome.map((outcome, index) => (
-                  <li
-                    className="list-disc list-inside mt-2 leading-relaxed"
-                    key={index}
-                  >
-                    {outcome.measure}
-                    <p className="text-sm">
-                      <span className="font-medium">Timeframe:</span>
-                      {outcome.timeframe}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+
+            {/* Qr code  */}
+            <div className="w-[30%] text-destructive mb-6 rounded-lg border border-white">
+              <div className="text-center flex flex-col items-center pt-5">
+                <QRCodeSVG value={data.studyUrl} size={120} level="H" />
+                <p className="text-center mt-2 text-xs leading-relaxed pt-6">
+                  FOR ADDITIONAL INFORMATION SCAN THE QR CODE <br />
+                  To find out how to participate in this trial, please visit
+                  clinicals.gov
+                  <br />({trialId})
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Study Information Section */}
-        <div
-          id="study-info"
-          className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200"
-        >
-          <h3 className="font-semibold text-destructive mb-3 text-center">
-            Study Information from clinicaltrials.gov
-          </h3>
-          <div className="flex flex-wrap justify-center gap-3">
-            <ExternalAlink
-              link={`${data.studyUrl}/#study-overview`}
-              className="px-6 py-2 bg-white border-2 border-destructive text-destructive font-medium rounded-lg hover:border-background hover:bg-background hover:text-white transition-colors"
-            >
-              Study Plan
-            </ExternalAlink>
-
-            <ExternalAlink
-              link={`${data.studyUrl}/#participation-criteria`}
-              className="px-6 py-2 bg-white border-2 border-destructive text-destructive font-medium rounded-lg hover:border-background hover:bg-background hover:text-white transition-colors"
-            >
-              Participation Criteria
-            </ExternalAlink>
-
-            <ExternalAlink
-              link={`${data.studyUrl}/#contact-and-locations`}
-              className="px-6 py-2 bg-white border-2 border-destructive text-destructive font-medium rounded-lg hover:border-background hover:bg-background hover:text-white transition-colors"
-            >
-              Contacts and Locations
-            </ExternalAlink>
           </div>
         </div>
       </div>

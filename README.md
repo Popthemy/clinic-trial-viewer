@@ -77,3 +77,20 @@ To deploy this project, you can use platforms like [Vercel](https://vercel.com/)
 3. Select the GitHub repository.
 4. Follow the prompts to deploy your app.
 ````
+
+## ✅ Color Style Guide Recap
+
+| Token Category                  | Purpose                                          |
+| ------------------------------- | ------------------------------------------------ |
+| `--background`                  | Main background of the app or page               |
+| `--foreground`                  | Default text color on backgrounds                |
+| `--card`                        | Surfaces: cards, modals, sheets                  |
+| `--popover`                     | Floating overlays (dropdowns, tooltips)          |
+| `--primary`                     | Main action buttons, highlights                  |
+| `--secondary`                   | Secondary actions, less emphasized               |
+| `--muted`                       | Low-importance surfaces or text                  |
+| `--accent`                      | Decorative, callout colors                       |
+| `--destructive`                 | Danger or destructive actions (e.g. delete)      |
+| `--border`, `--input`, `--ring` | Input outlines, focus indicators                 |
+| `--chart-*`                     | Data visualization colors (e.g., bar/pie charts) |
+| `--sidebar-*`                   | Sidebar elements and structure                   |

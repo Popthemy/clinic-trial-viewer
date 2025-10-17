@@ -20,16 +20,22 @@ const MedicalIcon = ({
   if (src) {
     return (
       <Image
-        src={src}
+        src={`${src}`}
         alt={alt}
         className={className}
-        placeholder="blur"
+        // placeholder="blur"
         fill
       />
     );
   }
 
-  return <ConditionIcon condition={condition} size={size * 4} />;
+  return (
+    <ConditionIcon
+      condition={condition}
+      className={className}
+      size={size * 4}
+    />
+  );
 };
 
 export default MedicalIcon;
